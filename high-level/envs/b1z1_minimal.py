@@ -16,13 +16,13 @@ from isaacgym.torch_utils import *
 from torch import Tensor
 import torchvision.transforms as transforms
 
-class B1Z1PickMulti(B1Z1Base):
+class B1Z1Minimal(B1Z1Base):
     def __init__(self, table_height=None, *args, **kwargs):
         self.num_actors = 3 #helen what is this?
         super().__init__(*args, **kwargs)
         self.near_goal_stop = self.cfg["env"].get("near_goal_stop", False)
-        self.obj_move_prob = self.cfg["env"].get("obj_move_prob", 0.0)
-        self.table_heights_fix = table_height
+        self.obj_move_prob = self.cfg["env"].get("obj_move_prob", 0.0) #helen what's this? no need?
+        self.table_heights_fix = table_height #helen: no need?
 
     def update_roboinfo(self):
         super().update_roboinfo()
@@ -30,7 +30,7 @@ class B1Z1PickMulti(B1Z1Base):
         self.base_obj_dis = torch.norm(base_obj_dis, dim=-1)
         
     def _setup_obs_and_action_info(self):
-        super()._setup_obs_and_action_info(removed_dim=9, num_action=9, num_obs=38+self.num_features-1)
+        super()._setup_obs_and_action_info(removed_dim=9, num_action=9, num_obs=38+self.num_features-1) #helen do we need to modify this? what are those based on? 
         
     def _extra_env_settings(self):
         self.multi_obj = self.cfg["env"]["asset"]["asset_multi"]
@@ -39,10 +39,10 @@ class B1Z1PickMulti(B1Z1Base):
         self.obj_orn = [self.multi_obj[obj]["orientation"] for obj in self.obj_list]
         self.obj_scale = [self.multi_obj[obj]["scale"] for obj in self.obj_list]
         obj_dir = os.path.join(self.cfg["env"]["asset"]["assetRoot"], self.cfg["env"]["asset"]["assetFileObj"])
-        if not self.no_feature:
+        if not self.no_feature: #helen what is no feature
             features = []
             for obj_name in self.obj_list:
-                feature_path = os.path.join(obj_dir, obj_name, "features.npy")
+                feature_path = os.path.join(obj_dir, obj_name, "features.npy") #helen what features.npy
                 feature = np.load(feature_path, allow_pickle=True)
                 features.append(feature)
             assert len(features) == len(self.obj_list)
@@ -431,6 +431,7 @@ class B1Z1PickMulti(B1Z1Base):
             
         return reward, reward
     
+    #helen no need?
     def _reward_grasp_base_height(self):
         cube_height = self._cube_root_states[:, 2]
         box_pos = self._cube_root_states[:, :3]

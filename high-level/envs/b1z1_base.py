@@ -21,11 +21,15 @@ ANG_VEL_YAW_CLIP = 0.35
 ANG_VEL_PITCH_CLIP = 0.35
 GAIT_WAIT_TIME = 35
 
+#helen run bizi_base to test
+
+#helen:create random integer
 @torch.jit.script
 def torch_rand_int(lower, upper, shape, device):
     # type: (int, int, Tuple[int, int], str) -> Tensor
     return torch.randint(lower, upper, shape, device=device)
 
+#helen normal noise
 class AddGaussianNoise(object):
     def __init__(self, mean=0., std=1.):
         self.std = std
@@ -49,12 +53,12 @@ class B1Z1Base(RewardVecTask):
                  *args, **kwargs
                 ):
         self.cfg = cfg
-        self.floating_base = self.cfg["env"].get("floatingBase", False)
+        self.floating_base = self.cfg["env"].get("floatingBase", False) #helen bool, in b1z1_float.yaml, env: floatingBase: True
         self.use_roboinfo = use_roboinfo
         self.observe_gait_commands = observe_gait_commands and (not self.floating_base)
-        self.no_feature = no_feature
+        self.no_feature = no_feature # not used here but in child class
         self.mask_arm = mask_arm
-        self.num_features = 0
+        self.num_features = 0 #helen ?
         self.depth_random = depth_random
         self.stu_distill = stu_distill
         self.commands_curriculum = commands_curriculum
@@ -62,10 +66,10 @@ class B1Z1Base(RewardVecTask):
         self.pred_success = pred_success
         self.rand_control = rand_control
         self.arm_delay = arm_delay
-        self.num_gripper_dof = num_gripper_dof
+        self.num_gripper_dof = num_gripper_dof #helen ?
         self.rand_cmd_scale = rand_cmd_scale
         self.rand_depth_clip = rand_depth_clip
-        self.stop_pick = stop_pick
+        self.stop_pick = stop_pick #helen what exactly about, include pick in this file?
         self.eval = eval
         
         self.num_torques = 18
@@ -74,6 +78,7 @@ class B1Z1Base(RewardVecTask):
         else:
             self.sim_id = int(sim_device.split(":")[1])
         
+        #helen cfg
         self.debug_vis = self.cfg["env"]["enableDebugVis"]
         self.camera_mode = self.cfg["env"]["cameraMode"]
         self.plane_static_friction = self.cfg["env"]["plane"]["staticFriction"]
@@ -88,6 +93,7 @@ class B1Z1Base(RewardVecTask):
         self.depth_clip_lower = self.cfg["sensor"].get("depth_clip_lower", 0.15)
         self.depth_clip_rand_range = self.cfg["sensor"].get("depth_clip_rand_range", [0.18, 0.25])
 
+        #helen ?
         if self.enable_camera and self.img_delay_frame:
             assert self.img_delay_frame <= self.control_freq_low, "control_freq_low < img_delay_frame, may have bug when get imgs"
         if self.enable_camera:
@@ -99,33 +105,33 @@ class B1Z1Base(RewardVecTask):
             if self.camera_mode == "seperate":
                 self.cfg["env"]["numEnvs"] = 240
             
-        self.robot_start_pose = robot_start_pose
+        self.robot_start_pose = robot_start_pose #helen robot_start_pose: tuple =(-2.00, 0, 0.55)
 
-        self._extra_env_settings()
+        self._extra_env_settings() #helen currently empty, add if need; in child file
         
-        self._setup_obs_and_action_info()
+        self._setup_obs_and_action_info() #helen change numObservations, numActions, numStates in cfg
         
         self.reward_scales = self.cfg["reward"]["scales"]
         
-        self.randomize = False
+        self.randomize = False #helen what randomize, randomize environment
         
         super().__init__(cfg, rl_device, sim_device, graphics_device_id, headless, virtual_screen_capture=virtual_screen_capture, force_render=force_render, *args, **kwargs)
         
         if not self.floating_base:
-            self.low_level_policy = self._load_low_level_model()
+            self.low_level_policy = self._load_low_level_model() #helen what is floating base, it is not considering arm
         else:
-            self.num_gripper_joints = 1
+            self.num_gripper_joints = 1 #why? 
         
         self._prepare_reward_function()
         
-        self.dt = self.control_freq_inv * self.sim_params.dt
+        self.dt = self.control_freq_inv * self.sim_params.dt #helen what is dt, time step?
         
         self._init_tensors()
         self.global_step_counter = cfg["env"].get("globalStepCounter", 0)
-        self.local_step_counter = 0
+        self.local_step_counter = 0 #helen what those step counter used for
         
         if self.viewer is not None:
-            self._init_camera()
+            self._init_camera() #helen viewer is camera view in env
         
         self.depth_transform = None
         if self.depth_random:
@@ -145,6 +151,7 @@ class B1Z1Base(RewardVecTask):
                 v2.RandomRotation(degrees=5)
             ])
             
+    #helen record display imgs
     def render_record(self, mode="rgb_array"):
         self.gym.step_graphics(self.sim)
         self.gym.render_all_camera_sensors(self.sim)
@@ -168,7 +175,8 @@ class B1Z1Base(RewardVecTask):
         Extrta settings for the environment, different from each environment.
         """
         pass
-        
+
+    #what do we setup differently?    
     def _setup_obs_and_action_info(self, removed_dim, num_action=9, num_obs=38):
         """Setup observation and action space:
             self.cfg["env"]["numObservations"] = _
@@ -176,12 +184,12 @@ class B1Z1Base(RewardVecTask):
         """
         _num_action = num_action
         if self.floating_base:
-            _num_action += 1
-        if self.pitch_control:
+            _num_action += 1 #helen why +1
+        if self.pitch_control: #helen what is pitch control?
             _num_action += 1
         _num_obs = num_obs + _num_action
         if (not self.floating_base) and self.use_roboinfo:
-            _num_obs += 24
+            _num_obs += 24 #helen why
         self.cfg["env"]["numObservations"] = _num_obs
         self.cfg["env"]["numActions"] = _num_action
         if self.enable_camera:
@@ -190,12 +198,14 @@ class B1Z1Base(RewardVecTask):
                 _num_states = self.cfg["sensor"]["resized_resolution"][0] * self.cfg["sensor"]["resized_resolution"][1] * 12 + (_num_obs - removed_dim) - self.num_features
             elif self.camera_mode == "wrist_seg":
                 _num_states = self.cfg["sensor"]["resized_resolution"][0] * self.cfg["sensor"]["resized_resolution"][1] * 9 + (_num_obs - removed_dim) - self.num_features
+            #helen we use front only?
             elif self.camera_mode == "front_only":
                 _num_states = self.cfg["sensor"]["resized_resolution"][0] * self.cfg["sensor"]["resized_resolution"][1] * 6 + (_num_obs - removed_dim) - self.num_features
             self.cfg["env"]["numStates"] = _num_states
 
+    #helen robot properties?
     def _process_rigid_body_props(self, props, i):
-        rng_mass = [0., 15.]
+        rng_mass = [0., 15.] #helen rng range
         rand_mass = np.random.uniform(rng_mass[0], rng_mass[1])
         # rand_mass = np.linspace(rng_mass[0], rng_mass[1], self.num_envs)[i]
         props[1].mass += rand_mass
@@ -313,6 +323,7 @@ class B1Z1Base(RewardVecTask):
             low_action_scale = [0.4, 0.45, 0.45] * 2 + [0.4, 0.45, 0.45] * 2 + [2.1, 0.6, 0.6, 0, 0, 0]
             self.low_action_scale = torch.tensor(low_action_scale, device=self.device)
             
+            #helen what are those gains?
             self.p_gains = torch.zeros(self.num_torques, dtype=torch.float, device=self.device, requires_grad=False)
             self.d_gains = torch.zeros(self.num_torques, dtype=torch.float, device=self.device, requires_grad=False)
             
@@ -337,7 +348,7 @@ class B1Z1Base(RewardVecTask):
         
         self.last_ee_pos = torch.zeros(self.num_envs, 3, device=self.device, dtype=torch.float)
         self.curr_ee_goal_sphere = torch.zeros(self.num_envs, 3, device=self.device, dtype=torch.float)
-        self.curr_ee_goal_cart = torch.zeros(self.num_envs, 3, device=self.device, dtype=torch.float)
+        self.curr_ee_goal_cart = torch.zeros(self.num_envs, 3, device=self.device, dtype=torch.float) #helen what is ee goal cart
         self.curr_ee_goal_orn_rpy = torch.zeros(self.num_envs, 3, device=self.device, dtype=torch.float)
         self.ee_goal_center_offset = torch.tensor([0.3, 0.0, 0.7], device=self.device).repeat(self.num_envs, 1)
 
@@ -363,7 +374,7 @@ class B1Z1Base(RewardVecTask):
                 num_channels = 4
             elif self.camera_mode == "wrist_seg":
                 num_channels = 3
-            elif self.camera_mode == "front_only":
+            elif self.camera_mode == "front_only": #helen choose this mode
                 num_channels = 2
             self.camera_history_buf = torch.zeros(self.num_envs, self.camera_history_len, self.cfg["sensor"]["resized_resolution"][0] * self.cfg["sensor"]["resized_resolution"][1] * num_channels, device=self.device, dtype=torch.float) # TODO: modify input image channels
             for env_i, env_handle in enumerate(self.envs):
@@ -421,6 +432,7 @@ class B1Z1Base(RewardVecTask):
         self.gym.add_ground(self.sim, plane_params)
         return
     
+    #helen our case
     def _create_onboard_cameras(self, env_handle, actor_handle, i):
         camera_props = gymapi.CameraProperties()
         camera_props.enable_tensors = True
@@ -559,7 +571,7 @@ class B1Z1Base(RewardVecTask):
         asset_options = gymapi.AssetOptions()
         asset_options.default_dof_drive_mode = 3
         asset_options.collapse_fixed_joints = True
-        asset_options.replace_cylinder_with_capsule = True
+        asset_options.replace_cylinder_with_capsule = True #helen what is this about
         asset_options.flip_visual_attachments = False
         asset_options.fix_base_link = False
         asset_options.density = 1000.0
@@ -574,6 +586,8 @@ class B1Z1Base(RewardVecTask):
         # asset_options.vhacd_enabled = True
         # asset_options.mesh_normal_mode = gymapi.COMPUTE_PER_VERTEX
         
+        # helen: gym.load_asset if the function to import objects with multiple DOFs. 
+        # This is what will probably be used to import door as well since it has joints as well 
         robot_asset = self.gym.load_asset(self.sim, asset_root, asset_file_robot, asset_options)
         self.num_dofs = self.gym.get_asset_dof_count(robot_asset)
         self.num_bodies = self.gym.get_asset_rigid_body_count(robot_asset)
@@ -624,7 +638,7 @@ class B1Z1Base(RewardVecTask):
         self.envs = []
         
         friction_range = [0.5, 3.0]
-        num_buckets = 128
+        num_buckets = 128 # helen what is buckets
         friction_buckets = torch_rand_float(friction_range[0], friction_range[1], (num_buckets,1), device='cpu')
         
         # arm_kp_range = np.linspace(300,400, self.num_envs)
@@ -956,10 +970,10 @@ class B1Z1Base(RewardVecTask):
     def _draw_ee_goal_target(self):
         self.gym.clear_lines(self.viewer)
         sphere_geom = gymutil.WireframeSphereGeometry(0.03, 4, 4, None, color=(1, 0.129, 0))
-        ee_goal_local = self.curr_ee_goal_cart
+        ee_goal_local = self.curr_ee_goal_cart #helen ee goal position?
         arm_base_local = torch.tensor([0.3, 0.0, 0.09], device=self.device).repeat(self.num_envs, 1)
         arm_base = quat_apply(self._robot_root_states[:, 3:7], arm_base_local) + self._robot_root_states[:, :3]
-        ee_goal_global = quat_apply(self._robot_root_states[:, 3:7], ee_goal_local) + arm_base
+        ee_goal_global = quat_apply(self._robot_root_states[:, 3:7], ee_goal_local) + arm_base #helen ee goal local and global?
         for i in range(self.num_envs):
             heights = ee_goal_global[i].cpu().numpy()
             x = heights[0]
@@ -968,7 +982,7 @@ class B1Z1Base(RewardVecTask):
             sphere_pose = gymapi.Transform(gymapi.Vec3(x, y, z), r=None)
             gymutil.draw_lines(sphere_geom, self.gym, self.viewer, self.envs[i], sphere_pose)
     
-    def _get_seg_id(self):
+    def _get_seg_id(self): #helen what is this?
         return 2
     
     def _get_camera_obs(self):
@@ -1062,6 +1076,7 @@ class B1Z1Base(RewardVecTask):
             wrist_mask_image.flatten(start_dim=1), \
             wrist_seg_depth.flatten(start_dim=1)
     
+    #helen use this
     def _get_front_camera_obs(self):
         """ Retrieve the camera images from camera sensors and normalize both depth and rgb images;
         """
@@ -1174,7 +1189,8 @@ class B1Z1Base(RewardVecTask):
         if return_all:
             return walking_mask0, walking_mask1, walking_mask2, walking_mask
         return walking_mask
-            
+
+    #helen handle robot walking behavior?        
     def _step_contact_targets(self):
         if self.observe_gait_commands:
             frequencies = 2
@@ -1217,6 +1233,7 @@ class B1Z1Base(RewardVecTask):
             self.clock_inputs[:, 2] = torch.sin(2 * np.pi * foot_indices[2])
             self.clock_inputs[:, 3] = torch.sin(2 * np.pi * foot_indices[3])
     
+    # get all target position from ee goal?
     def get_all_pos_targets(self, ee_goal_cart, ee_goal_orn_quat):
         dpos = ee_goal_cart - self.ee_pos
         drot = orientation_error(ee_goal_orn_quat, self.ee_orn / torch.norm(self.ee_orn, dim=-1).unsqueeze(-1))
@@ -1256,7 +1273,7 @@ class B1Z1Base(RewardVecTask):
             Observations are dict of observations (currently only one member called 'obs')
         """
         
-        if self.pred_success:
+        if self.pred_success: #helen what's this
             if actions.shape[-1] == (self.action_space.shape[-1]+1):
                 actions, _ = actions[...,:-1], actions[...,-1]
                 
@@ -1280,7 +1297,7 @@ class B1Z1Base(RewardVecTask):
         # wrist_img_delay_frame = random.randint(front_img_delay_frame, self.img_delay_frame+1)
         # -------------------------query low level and simulate--------------------------
         for low_step in range(self.control_freq_low):
-            if not self.floating_base:
+            if not self.floating_base: #helen floating base:a perfect low-level navigation ability but without arm-leg coordination
                 self._compute_low_level_observations()
                 with torch.no_grad():
                     low_actions = self.low_level_policy(self.low_obs_buf.detach(), hist_encoding=True)
@@ -1384,7 +1401,7 @@ class B1Z1Base(RewardVecTask):
                 self.delta_goal_cart = self.actions[:, :3] * 0.02
             else:
                 self.delta_goal_cart = torch.clip(self.actions[:, :3], -0.02, 0.02)
-        self.curr_ee_goal_cart[:] = self.curr_ee_goal_cart + self.delta_goal_cart
+        self.curr_ee_goal_cart[:] = self.curr_ee_goal_cart + self.delta_goal_cart #helen what is ee? end effector
         # self.curr_ee_goal_cart[:, 0] = torch.clip(self.curr_ee_goal_cart[:, 0], 0.0, 0.9)
         self.curr_ee_goal_cart[:, 0] = torch.clip(self.curr_ee_goal_cart[:, 0], 0., 0.7)
         self.curr_ee_goal_cart[:, 1] = torch.clip(self.curr_ee_goal_cart[:, 1], -0.7, 0.7)
@@ -1441,7 +1458,7 @@ class B1Z1Base(RewardVecTask):
         if self.rand_depth_clip:
             self.depth_clip_lower = torch_rand_float(self.depth_clip_rand_range[0], self.depth_clip_rand_range[1], (self.num_envs,1), device=self.device).unsqueeze(-1)
 
-        return ee_goal_cart, ee_goal_orn_quat
+        return ee_goal_cart, ee_goal_orn_quat #helen ?
     
     def set_gripper(self):
         u_gripper = self.actions[:, 6].unsqueeze(-1)
