@@ -33,200 +33,210 @@ class B1Z1Minimal(B1Z1Base):
         super()._setup_obs_and_action_info(removed_dim=9, num_action=9, num_obs=38+self.num_features-1) #helen do we need to modify this? what are those based on? 
         
     def _extra_env_settings(self):
-        self.multi_obj = self.cfg["env"]["asset"]["asset_multi"]
-        self.obj_list = list(self.multi_obj.keys())
-        self.obj_height = [self.multi_obj[obj]["height"] for obj in self.obj_list]
-        self.obj_orn = [self.multi_obj[obj]["orientation"] for obj in self.obj_list]
-        self.obj_scale = [self.multi_obj[obj]["scale"] for obj in self.obj_list]
-        obj_dir = os.path.join(self.cfg["env"]["asset"]["assetRoot"], self.cfg["env"]["asset"]["assetFileObj"])
-        if not self.no_feature: #helen what is no feature
-            features = []
-            for obj_name in self.obj_list:
-                feature_path = os.path.join(obj_dir, obj_name, "features.npy") #helen what features.npy
-                feature = np.load(feature_path, allow_pickle=True)
-                features.append(feature)
-            assert len(features) == len(self.obj_list)
-            self.features = np.concatenate(features, axis=0)
-            self.num_features = self.features.shape[1]
-        else:
-            self.num_features = 0
+        # self.multi_obj = self.cfg["env"]["asset"]["asset_multi"]
+        # self.obj_list = list(self.multi_obj.keys())
+        # self.obj_height = [self.multi_obj[obj]["height"] for obj in self.obj_list]
+        # self.obj_orn = [self.multi_obj[obj]["orientation"] for obj in self.obj_list]
+        # self.obj_scale = [self.multi_obj[obj]["scale"] for obj in self.obj_list]
+        # obj_dir = os.path.join(self.cfg["env"]["asset"]["assetRoot"], self.cfg["env"]["asset"]["assetFileObj"])
+        # if not self.no_feature: #helen what is no feature
+        #     features = []
+        #     for obj_name in self.obj_list:
+        #         feature_path = os.path.join(obj_dir, obj_name, "features.npy") #helen what features.npy
+        #         feature = np.load(feature_path, allow_pickle=True)
+        #         features.append(feature)
+        #     assert len(features) == len(self.obj_list)
+        #     self.features = np.concatenate(features, axis=0)
+        #     self.num_features = self.features.shape[1]
+        # else:
+        #     self.num_features = 0
 
     def _init_tensors(self):
         """Add extra tensors for cube and table
         """
         super()._init_tensors()
-        #helen we don't need below?
-        self._table_root_states = self._root_states.view(self.num_envs, self.num_actors, self._actor_root_state.shape[-1])[..., 1, :]
-        self._initial_table_root_states = self._table_root_states.clone()
-        self._initial_table_root_states[:, 7:13] = 0.0
+        # #helen we don't need below?
+        # self._table_root_states = self._root_states.view(self.num_envs, self.num_actors, self._actor_root_state.shape[-1])[..., 1, :]
+        # self._initial_table_root_states = self._table_root_states.clone()
+        # self._initial_table_root_states[:, 7:13] = 0.0
         
-        self._cube_root_states = self._root_states.view(self.num_envs, self.num_actors, self._actor_root_state.shape[-1])[..., 2, :]
-        self._initial_cube_root_states = self._cube_root_states.clone()
-        self._initial_cube_root_states[:, 7:13] = 0.0
+        # self._cube_root_states = self._root_states.view(self.num_envs, self.num_actors, self._actor_root_state.shape[-1])[..., 2, :]
+        # self._initial_cube_root_states = self._cube_root_states.clone()
+        # self._initial_cube_root_states[:, 7:13] = 0.0
         
-        self._table_actor_ids = self.num_actors * torch.arange(self.num_envs, device=self.device, dtype=torch.int32) + 1
-        self._cube_actor_ids = self.num_actors * torch.arange(self.num_envs, device=self.device, dtype=torch.int32) + 2
+        # self._table_actor_ids = self.num_actors * torch.arange(self.num_envs, device=self.device, dtype=torch.int32) + 1
+        # self._cube_actor_ids = self.num_actors * torch.arange(self.num_envs, device=self.device, dtype=torch.int32) + 2
         
-        self.table_idx = self.gym.find_actor_rigid_body_index(self.envs[0], self.table_handles[0], "box", gymapi.DOMAIN_ENV)
+        # self.table_idx = self.gym.find_actor_rigid_body_index(self.envs[0], self.table_handles[0], "box", gymapi.DOMAIN_ENV)
         
-        self.lifted_success_threshold = self.cfg["env"]["liftedSuccessThreshold"]
-        self.lifted_init_threshold = self.cfg["env"]["liftedInitThreshold"]
-        self.base_object_distace_threshold = self.cfg["env"]["baseObjectDisThreshold"]
-        self.lifted_object = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
+        # self.lifted_success_threshold = self.cfg["env"]["liftedSuccessThreshold"]
+        # self.lifted_init_threshold = self.cfg["env"]["liftedInitThreshold"]
+        # self.base_object_distace_threshold = self.cfg["env"]["baseObjectDisThreshold"]
+        # self.lifted_object = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
         
-        self.highest_object = -torch.ones(self.num_envs, device=self.device, dtype=torch.float)
-        self.curr_height = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
+        # self.highest_object = -torch.ones(self.num_envs, device=self.device, dtype=torch.float)
+        # self.curr_height = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
         
-        self.random_angle = torch.as_tensor(np.array([0, 1.5708, -1.5708]), device=self.device, dtype=torch.float)
-        self.lifted_now = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
+        # self.random_angle = torch.as_tensor(np.array([0, 1.5708, -1.5708]), device=self.device, dtype=torch.float)
+        # self.lifted_now = torch.zeros(self.num_envs, device=self.device, dtype=torch.bool)
 
-        if self.pred_success:
-            self.predlift_success_counter = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
+        # if self.pred_success:
+        #     self.predlift_success_counter = torch.zeros(self.num_envs, device=self.device, dtype=torch.long)
 
+    #helen why we have create extra here and also additional implementation for create_envs? why design like this?
     def _create_extra(self, env_i):
-        env_ptr = self.envs[env_i]
-        col_group = env_i
-        col_filter = 0
-        i = env_i
-        
-        table_pos = [0.0, 0.0, self.table_dims.z / 2]
-        self.table_heights[i] = table_pos[-1] + self.table_dims.z / 2
+        """Create extra objects for each environment.
+        """
 
-        obj_idx = i % len(self.obj_list)
-        obj_asset = self.ycb_asset_list[obj_idx]
-        obj_height = self.obj_height[obj_idx]
+        # helen add door and handle here
+        # env_ptr = self.envs[env_i]
+        # col_group = env_i
+        # col_filter = 0
+        # i = env_i
         
-        table_start_pose = gymapi.Transform()
-        table_start_pose.p = gymapi.Vec3(*table_pos)
-        table_start_pose.r = gymapi.Quat(0, 0, 0, 1)
-        table_handle = self.gym.create_actor(env_ptr, self.table_asset, table_start_pose, "table", col_group, col_filter, 1)
-        
-        cube_start_pose = gymapi.Transform()
-        cube_start_pose.p.x = table_start_pose.p.x + np.random.uniform(-0.1, 0.1)
-        cube_start_pose.p.y = table_start_pose.p.y + np.random.uniform(-0.1, 0.1)
-        cube_start_pose.p.z = self.table_heights[i] + obj_height - 0.05
-        # cube_start_pose.r = quat_mul(gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), np.random.uniform(-np.pi, np.pi)), gymapi.Quat(*self.obj_orn[obj_idx]))
-        cube_handle = self.gym.create_actor(env_ptr, obj_asset, cube_start_pose, "cube", col_group, col_filter, 2)
+        # table_pos = [0.0, 0.0, self.table_dims.z / 2]
+        # self.table_heights[i] = table_pos[-1] + self.table_dims.z / 2
 
-        if not self.no_feature:
-            self.feature_obs[i, :] = self.features[obj_idx, :]
-        self.init_height[i] = obj_height
-        self.init_quat[i, :] = torch.tensor(self.obj_orn[obj_idx], device=self.device)
+        # obj_idx = i % len(self.obj_list)
+        # obj_asset = self.ycb_asset_list[obj_idx]
+        # obj_height = self.obj_height[obj_idx]
         
-        self.table_handles.append(table_handle)
-        self.cube_handles.append(cube_handle)
+        # table_start_pose = gymapi.Transform()
+        # table_start_pose.p = gymapi.Vec3(*table_pos)
+        # table_start_pose.r = gymapi.Quat(0, 0, 0, 1)
+        # table_handle = self.gym.create_actor(env_ptr, self.table_asset, table_start_pose, "table", col_group, col_filter, 1)
+        
+        # cube_start_pose = gymapi.Transform()
+        # cube_start_pose.p.x = table_start_pose.p.x + np.random.uniform(-0.1, 0.1)
+        # cube_start_pose.p.y = table_start_pose.p.y + np.random.uniform(-0.1, 0.1)
+        # cube_start_pose.p.z = self.table_heights[i] + obj_height - 0.05
+        # # cube_start_pose.r = quat_mul(gymapi.Quat.from_axis_angle(gymapi.Vec3(0, 0, 1), np.random.uniform(-np.pi, np.pi)), gymapi.Quat(*self.obj_orn[obj_idx]))
+        # cube_handle = self.gym.create_actor(env_ptr, obj_asset, cube_start_pose, "cube", col_group, col_filter, 2)
+
+        # if not self.no_feature:
+        #     self.feature_obs[i, :] = self.features[obj_idx, :]
+        # self.init_height[i] = obj_height
+        # self.init_quat[i, :] = torch.tensor(self.obj_orn[obj_idx], device=self.device)
+        
+        # self.table_handles.append(table_handle)
+        # self.cube_handles.append(cube_handle)
         
     def _create_envs(self):
         asset_root = self.cfg["env"]["asset"]["assetRoot"]
         asset_file_ycb = self.cfg["env"]["asset"]["assetFileObj"]
         
-        self.table_heights = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
+        #self.table_heights = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
         
-        # helen import asset
+        # helen import asset here
         # table
-        self.table_dimz = 0.25
-        self.table_dims = gymapi.Vec3(0.6, 1.0, self.table_dimz)
-        table_options = gymapi.AssetOptions()
-        table_options.fix_base_link = True
-        self.table_asset = self.gym.create_box(self.sim, self.table_dims.x, self.table_dims.y, self.table_dims.z, table_options)
-        table_rigid_shape_props = self.gym.get_asset_rigid_shape_properties(self.table_asset)
-        table_rigid_shape_props[0].friction = 0.5
-        self.gym.set_asset_rigid_shape_properties(self.table_asset, table_rigid_shape_props)
+        
+        # self.table_dimz = 0.25
+        # self.table_dims = gymapi.Vec3(0.6, 1.0, self.table_dimz)
+        # table_options = gymapi.AssetOptions()
+        # table_options.fix_base_link = True
+        # self.table_asset = self.gym.create_box(self.sim, self.table_dims.x, self.table_dims.y, self.table_dims.z, table_options)
+        # table_rigid_shape_props = self.gym.get_asset_rigid_shape_properties(self.table_asset)
+        # table_rigid_shape_props[0].friction = 0.5
+        # self.gym.set_asset_rigid_shape_properties(self.table_asset, table_rigid_shape_props)
         
         # cube
-        ycb_opts = gymapi.AssetOptions()
-        ycb_opts.use_mesh_materials = True
-        ycb_opts.vhacd_enabled = True
-        ycb_opts.override_inertia = True
-        ycb_opts.override_com = True
-        ycb_opts.mesh_normal_mode = gymapi.COMPUTE_PER_VERTEX
-        # ycb_opts.vhacd_params = gymapi.VhacdParams()
-        # ycb_opts.vhacd_params.resolution = 500000
-        self.ycb_asset_list = []
-        for i in range(len(self.obj_list)):
-            file_path = asset_file_ycb + self.obj_list[i] + "/model.urdf"
-            ycb_asset = self.gym.load_asset(self.sim, asset_root, file_path, ycb_opts)
-            ycb_asset_props = self.gym.get_asset_rigid_shape_properties(ycb_asset)
-            ycb_asset_props[0].friction = 2.0
-            self.gym.set_asset_rigid_shape_properties(ycb_asset, ycb_asset_props)
-            self.ycb_asset_list.append(ycb_asset)
+        # ycb_opts = gymapi.AssetOptions()
+        # ycb_opts.use_mesh_materials = True
+        # ycb_opts.vhacd_enabled = True
+        # ycb_opts.override_inertia = True
+        # ycb_opts.override_com = True
+        # ycb_opts.mesh_normal_mode = gymapi.COMPUTE_PER_VERTEX
+        # # ycb_opts.vhacd_params = gymapi.VhacdParams()
+        # # ycb_opts.vhacd_params.resolution = 500000
+        # self.ycb_asset_list = []
+        # for i in range(len(self.obj_list)):
+        #     file_path = asset_file_ycb + self.obj_list[i] + "/model.urdf"
+        #     ycb_asset = self.gym.load_asset(self.sim, asset_root, file_path, ycb_opts)
+        #     ycb_asset_props = self.gym.get_asset_rigid_shape_properties(ycb_asset)
+        #     ycb_asset_props[0].friction = 2.0
+        #     self.gym.set_asset_rigid_shape_properties(ycb_asset, ycb_asset_props)
+        #     self.ycb_asset_list.append(ycb_asset)
 
-        self.table_handles, self.cube_handles = [], []
+        # self.table_handles, self.cube_handles = [], []
         
-        if not self.no_feature:
-            self.feature_obs = torch.zeros(self.num_envs, self.num_features, device=self.device, dtype=torch.float)
-            self.features = torch.tensor(self.features, device=self.device, dtype=torch.float)
-        self.init_height = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
-        self.init_quat = torch.zeros(self.num_envs, 4, device=self.device, dtype=torch.float)
+        # if not self.no_feature:
+        #     self.feature_obs = torch.zeros(self.num_envs, self.num_features, device=self.device, dtype=torch.float)
+        #     self.features = torch.tensor(self.features, device=self.device, dtype=torch.float)
+        # self.init_height = torch.zeros(self.num_envs, device=self.device, dtype=torch.float)
+        # self.init_quat = torch.zeros(self.num_envs, 4, device=self.device, dtype=torch.float)
 
         super()._create_envs()
             
     def _reset_envs(self, env_ids):
         super()._reset_envs(env_ids)
         if len(env_ids) > 0:
-            # bowl_indices = torch.tensor([0, 9, 27, 31], device=self.device)
-            # ball_indices = torch.tensor([3, 15, 17, 23], device=self.device)
-            # long_box_indices = torch.tensor([1], device=self.device)
-            # square_box_indices = torch.tensor([11, 12, 24], device=self.device)
-            # bottle_indices = torch.tensor([2, 13, 16, 20], device=self.device)
-            # cup_indices = torch.tensor([5, 28, 29], device=self.device)
-            # drill_indices = torch.tensor([7], device=self.device)
-            num_group = self.num_envs // 33
-            bowl_indices_np = np.array([[0+i*33, 9+i*33, 27+i*33, 31+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            bowl_indices = torch.from_numpy(bowl_indices_np).to(self.device)
-            ball_indices_np = np.array([[3+i*33, 15+i*33, 17+i*33, 23+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            ball_indices = torch.from_numpy(ball_indices_np).to(self.device)
-            long_box_indices_np = np.array([[1+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            long_box_indices = torch.from_numpy(long_box_indices_np).to(self.device)
-            square_box_indices_np = np.array([[11+i*33, 12+i*33, 24+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            square_box_indices = torch.from_numpy(square_box_indices_np).to(self.device)
-            bottle_indices_np = np.array([[2+i*33, 13+i*33, 16+i*33, 20+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            bottle_indices = torch.from_numpy(bottle_indices_np).to(self.device)
-            cup_indices_np = np.array([[5+i*33, 28+i*33, 29+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            cup_indices = torch.from_numpy(cup_indices_np).to(self.device)
-            drill_indices_np = np.array([[7+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
-            drill_indices = torch.from_numpy(drill_indices_np).to(self.device)
+            # # bowl_indices = torch.tensor([0, 9, 27, 31], device=self.device)
+            # # ball_indices = torch.tensor([3, 15, 17, 23], device=self.device)
+            # # long_box_indices = torch.tensor([1], device=self.device)
+            # # square_box_indices = torch.tensor([11, 12, 24], device=self.device)
+            # # bottle_indices = torch.tensor([2, 13, 16, 20], device=self.device)
+            # # cup_indices = torch.tensor([5, 28, 29], device=self.device)
+            # # drill_indices = torch.tensor([7], device=self.device)
+            # num_group = self.num_envs // 33
+            # bowl_indices_np = np.array([[0+i*33, 9+i*33, 27+i*33, 31+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # bowl_indices = torch.from_numpy(bowl_indices_np).to(self.device)
+            # ball_indices_np = np.array([[3+i*33, 15+i*33, 17+i*33, 23+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # ball_indices = torch.from_numpy(ball_indices_np).to(self.device)
+            # long_box_indices_np = np.array([[1+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # long_box_indices = torch.from_numpy(long_box_indices_np).to(self.device)
+            # square_box_indices_np = np.array([[11+i*33, 12+i*33, 24+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # square_box_indices = torch.from_numpy(square_box_indices_np).to(self.device)
+            # bottle_indices_np = np.array([[2+i*33, 13+i*33, 16+i*33, 20+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # bottle_indices = torch.from_numpy(bottle_indices_np).to(self.device)
+            # cup_indices_np = np.array([[5+i*33, 28+i*33, 29+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # cup_indices = torch.from_numpy(cup_indices_np).to(self.device)
+            # drill_indices_np = np.array([[7+i*33] for i in range(num_group)]).reshape(1,-1).squeeze()
+            # drill_indices = torch.from_numpy(drill_indices_np).to(self.device)
             
-            bowl_success_time = self.success_counter[bowl_indices].sum().item(), self.episode_counter[bowl_indices].sum().item()
-            ball_success_time = self.success_counter[ball_indices].sum().item(), self.episode_counter[ball_indices].sum().item()
-            longbox_success_time = self.success_counter[long_box_indices].sum().item(), self.episode_counter[long_box_indices].sum().item()
-            squarebox_success_time = self.success_counter[square_box_indices].sum().item(), self.episode_counter[square_box_indices].sum().item()
-            bottle_success_time = self.success_counter[bottle_indices].sum().item(), self.episode_counter[bottle_indices].sum().item()
-            cup_success_time = self.success_counter[cup_indices].sum().item(), self.episode_counter[cup_indices].sum().item()
-            drill_success_time = self.success_counter[drill_indices].sum().item(), self.episode_counter[drill_indices].sum().item()
+            # bowl_success_time = self.success_counter[bowl_indices].sum().item(), self.episode_counter[bowl_indices].sum().item()
+            # ball_success_time = self.success_counter[ball_indices].sum().item(), self.episode_counter[ball_indices].sum().item()
+            # longbox_success_time = self.success_counter[long_box_indices].sum().item(), self.episode_counter[long_box_indices].sum().item()
+            # squarebox_success_time = self.success_counter[square_box_indices].sum().item(), self.episode_counter[square_box_indices].sum().item()
+            # bottle_success_time = self.success_counter[bottle_indices].sum().item(), self.episode_counter[bottle_indices].sum().item()
+            # cup_success_time = self.success_counter[cup_indices].sum().item(), self.episode_counter[cup_indices].sum().item()
+            # drill_success_time = self.success_counter[drill_indices].sum().item(), self.episode_counter[drill_indices].sum().item()
             
-            bowl_success_rate = min(bowl_success_time[0], bowl_success_time[1]) / max(bowl_success_time[1], 1)
-            ball_success_rate = min(ball_success_time[0], ball_success_time[1]) / max(ball_success_time[1], 1)
-            longbox_success_rate = min(longbox_success_time[0], longbox_success_time[1]) / max(longbox_success_time[1], 1)
-            squarebox_success_rate = min(squarebox_success_time[0], squarebox_success_time[1]) / max(squarebox_success_time[1], 1)
-            bottle_success_rate = min(bottle_success_time[0], bottle_success_time[1]) / max(bottle_success_time[1], 1)
-            cup_success_rate = min(cup_success_time[0], cup_success_time[1]) / max(cup_success_time[1], 1)
-            drill_success_rate = min(drill_success_time[0], drill_success_time[1]) / max(drill_success_time[1], 1)
+            # bowl_success_rate = min(bowl_success_time[0], bowl_success_time[1]) / max(bowl_success_time[1], 1)
+            # ball_success_rate = min(ball_success_time[0], ball_success_time[1]) / max(ball_success_time[1], 1)
+            # longbox_success_rate = min(longbox_success_time[0], longbox_success_time[1]) / max(longbox_success_time[1], 1)
+            # squarebox_success_rate = min(squarebox_success_time[0], squarebox_success_time[1]) / max(squarebox_success_time[1], 1)
+            # bottle_success_rate = min(bottle_success_time[0], bottle_success_time[1]) / max(bottle_success_time[1], 1)
+            # cup_success_rate = min(cup_success_time[0], cup_success_time[1]) / max(cup_success_time[1], 1)
+            # drill_success_rate = min(drill_success_time[0], drill_success_time[1]) / max(drill_success_time[1], 1)
 
-            wandb_dict = {
-                "success_rate": {
-                    "SuccessRate / Bowl": bowl_success_rate,
-                    "SuccessRate / Ball": ball_success_rate,
-                    "SuccessRate / LongBox": longbox_success_rate,
-                    "SuccessRate / SquareBox": squarebox_success_rate,
-                    "SuccessRate / Bottle": bottle_success_rate,
-                    "SuccessRate / Cup": cup_success_rate,
-                    "SuccessRate / Drill": drill_success_rate,
-                }
-            }
+            #helen do we need to define our own wanbd dict? or wandb something
+            # wandb_dict = {
+            #     "success_rate": {
+            #         "SuccessRate / Bowl": bowl_success_rate,
+            #         "SuccessRate / Ball": ball_success_rate,
+            #         "SuccessRate / LongBox": longbox_success_rate,
+            #         "SuccessRate / SquareBox": squarebox_success_rate,
+            #         "SuccessRate / Bottle": bottle_success_rate,
+            #         "SuccessRate / Cup": cup_success_rate,
+            #         "SuccessRate / Drill": drill_success_rate,
+            #     }
+            # }
+
+            #helen what is pred_success?
             if self.pred_success:
                 predlift_success_rate = 0 if self.global_step_counter==0 else (self.predlift_success_counter / self.local_step_counter).mean().item()
                 wandb_dict["success_rate"]["SuccessRate / PredLifted"] = predlift_success_rate
             
-            if self.cfg["env"]["wandb"]:
-                self.extras.update(wandb_dict)
-                # wandb.log(wandb_dict, step=self.global_step_counter)
-            else:
-                print(wandb_dict)
-                print("Bowl count: {}\n, Ball count: {}\n, LongBox count: {}\n, SquareBox count: {}\n, Bottle count: {}\n, Cup count: {}\n, Drill count: {}\n".format(bowl_success_time[1], ball_success_time[1], longbox_success_time[1], squarebox_success_time[1], bottle_success_time[1], cup_success_time[1], drill_success_time[1]))
-                success_time = self.success_counter.sum().item(), self.episode_counter.sum().item()
-                success_rate = min(success_time[0], success_time[1]) / max(success_time[1], 1)
-                print("Total success rate", success_rate)
+            #where is this? cannot find cfg["env"]["wandb"]
+            # if self.cfg["env"]["wandb"]:
+            #     self.extras.update(wandb_dict)
+            #     # wandb.log(wandb_dict, step=self.global_step_counter)
+            # else:
+            #     print(wandb_dict)
+            #     print("Bowl count: {}\n, Ball count: {}\n, LongBox count: {}\n, SquareBox count: {}\n, Bottle count: {}\n, Cup count: {}\n, Drill count: {}\n".format(bowl_success_time[1], ball_success_time[1], longbox_success_time[1], squarebox_success_time[1], bottle_success_time[1], cup_success_time[1], drill_success_time[1]))
+            #     success_time = self.success_counter.sum().item(), self.episode_counter.sum().item()
+            #     success_rate = min(success_time[0], success_time[1]) / max(success_time[1], 1)
+            #     print("Total success rate", success_rate)
                 
     def _reset_objs(self, env_ids):
         if len(env_ids)==0:
